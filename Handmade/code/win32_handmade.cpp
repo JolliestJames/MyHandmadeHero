@@ -46,13 +46,20 @@ struct win32_window_dimension
 
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
 typedef X_INPUT_GET_STATE(X_Input_Get_State);
-X_INPUT_GET_STATE(XInputGetStateStub){return(0);}
+X_INPUT_GET_STATE(XInputGetStateStub)
+{
+	return(ERROR_DEVICE_NOT_CONNECTED);
+}
 global_variable X_Input_Get_State *XInputGetState_ = XInputGetStateStub;
 #define XInputGetState XInputGetState_
 
 #define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
 typedef X_INPUT_SET_STATE(X_Input_Set_State);
-X_INPUT_SET_STATE(XInputSetStateStub){return(0);}
+X_INPUT_SET_STATE(XInputSetStateStub)
+{
+	return(ERROR_DEVICE_NOT_CONNECTED);
+}
+
 global_variable X_Input_Set_State *XInputSetState_ = XInputSetStateStub;
 #define XInputSetState XInputSetState_
 
