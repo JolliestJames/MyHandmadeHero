@@ -371,6 +371,8 @@ WinMain(
 				{
 					XINPUT_STATE ControllerState;
 
+					//when we call XInputGetState, if no controller is plugged in for an index, XINPUT will stall
+					//for several millis. THIS IS REALLY BAD, WE ONLY WANT TO PULL THE CONNECTED CONTROLLERS
 					if(XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
 					{
 						//controller is plugged in
