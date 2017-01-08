@@ -9,6 +9,7 @@
 #include <windows.h>
 #include <stdint.h>
 #include <xinput.h>
+#include <dsound.h>
 
 #define internal static
 #define local_persist static
@@ -65,12 +66,16 @@ X_INPUT_SET_STATE(XInputSetStateStub)
 global_variable X_Input_Set_State *XInputSetState_ = XInputSetStateStub;
 #define XInputSetState XInputSetState_
 
+#define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
+typedef DIRECT_SOUND_CREATE(direct_sound_create);
+
 internal void
 Win32_Load_X_Input(void)
 {
 	HMODULE XInputLibrary = LoadLibraryA("xinput1_4.dll");
 	if(!XInputLibrary)
 	{
+		//diagnostic
 		HMODULE XInputLibrary = LoadLibraryA("xinput1_3.dll");
 	}
 	
@@ -82,6 +87,102 @@ Win32_Load_X_Input(void)
 		
 		XInputSetState = (X_Input_Set_State *)GetProcAddress(XInputLibrary, "XInputSetState");
 		if(!XInputSetState){XInputSetState = XInputSetStateStub;}
+		
+		//diagnostic
+	
+	}
+	else
+	{
+		
+	}
+}
+
+internal void
+Win32InitializeDSound(HWND Window, int32 SamplesPerSecond, int32 BufferSize)
+{
+	//load the library
+	HMODULE DSoundLibrary = LoadLibraryA("dsound.dll");
+	
+	if(DSoundLibrary)
+	{
+		direct_sound_create *DirectSoundCreate = (direct_sound_create *)
+			GetProcAddress(DSoundLibrary, "DirectSoundCreate");	
+		
+		LPDIRECTSOUND DirectSound;
+		
+		if(DirectSoundCreate && SUCCEEDED(DirectSoundCreate(0, &DirectSound, 0)))
+		{
+			//we're creating memory and writing int16 bit samples into it
+			//LEFT RIGHT LEFT RIGHT LEFT RIGHT 
+			//how big is [LEFT RIGHT] in bytes? 16+16/8 = 4
+			WAVEFORMATEX WaveFormat = {};
+			WaveFormat.wFormatTag = WAVE_FORMAT_PCM;
+			WaveFormat.nChannels = 2;
+			WaveFormat.nSamplesPerSec = SamplesPerSecond;
+			WaveFormat.wBitsPerSample = 16;
+			WaveFormat.nBlockAlign = (WaveFormat.nChannels*WaveFormat.wBitsPerSample)/8;
+			WaveFormat.nAvgBytesPerSec = WaveFormat.nSamplesPerSec*WaveFormat.nBlockAlign;
+			WaveFormat.cbSize = 0;
+			
+			if(SUCCEEDED(DirectSound->SetCooperativeLevel(Window, DSSCL_PRIORITY)))
+			{
+				//do we need DSBCAPS_GLOBALFOCUS?
+				DSBUFFERDESC BufferDescription = {};
+				BufferDescription.dwSize = sizeof(BufferDescription);
+				BufferDescription.dwFlags = DSBCAPS_PRIMARYBUFFER;
+				
+				//create primary buffer
+				
+				LPDIRECTSOUNDBUFFER PrimaryBuffer;
+				
+				if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDescription, &PrimaryBuffer, 0)))
+				{
+					if(SUCCEEDED(PrimaryBuffer->SetFormat(&WaveFormat)))
+					{
+						//we've set the format of the primary of buffer. if everything went right..
+						OutputDebugStringA("Primary buffer set\n");
+					}
+					else
+					{
+						//MORE DIAGNOSTICS
+					}
+				}
+				else
+				{
+					//MORE DIAGNOSTICS
+				}
+			}
+			else
+			{
+				//MORE DIAGNOSTICS
+			}
+			
+			
+			// DSCBCAPS_GETCURRENTPOSITION2
+			DSBUFFERDESC BufferDescription = {};
+			BufferDescription.dwSize = sizeof(BufferDescription);
+			BufferDescription.dwFlags = 0;
+			BufferDescription.dwBufferBytes = BufferSize;
+			BufferDescription.lpwfxFormat = &WaveFormat;
+			
+			//create a secondary buffer
+			LPDIRECTSOUNDBUFFER SecondaryBuffer;
+			
+			if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDescription, &SecondaryBuffer, 0)))
+			{
+				OutputDebugStringA("Secondary buffer created successfully\n");
+			}
+		
+			//start playing
+		}
+		else
+		{
+			//diagnostic
+		}
+	}
+	else
+	{
+		//diagnostic
 	}
 }
 
@@ -350,6 +451,8 @@ WinMain(
 			
 			HDC DeviceContext = GetDC(Window);
 			
+			Win32InitializeDSound(Window, 48000, 48000*sizeof(int16)*2);
+
 			while(GlobalRunning)
 			{
 		
