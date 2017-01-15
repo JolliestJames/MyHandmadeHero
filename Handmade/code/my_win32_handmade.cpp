@@ -52,7 +52,7 @@ struct win32_window_dimension
 	int Height;
 };
 
-global_variable bool GlobalRunning;
+global_variable bool32 GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
 global_variable LPDIRECTSOUNDBUFFER GlobalSecondaryBuffer;
 
@@ -82,10 +82,15 @@ internal void
 Win32_Load_X_Input(void)
 {
 	HMODULE XInputLibrary = LoadLibraryA("xinput1_4.dll");
+	
 	if(!XInputLibrary)
 	{
-		//diagnostic
-		HMODULE XInputLibrary = LoadLibraryA("xinput1_3.dll");
+		XInputLibrary = LoadLibraryA("xinput9_1_0.dll");
+	}
+	
+	if(!XInputLibrary)
+	{
+		XInputLibrary = LoadLibraryA("xinput1_3.dll");
 	}
 	
 	if(XInputLibrary)
@@ -365,8 +370,8 @@ Win32MainWindowCallback(HWND   Window,
 		{
 			uint32 VKCode = wParam;
 			//Either we get 1 << 30 or 0, we want 1 if the former and 0 if the latter
-			bool WasDown = ((lParam & (1 << 30)) != 0); 
-			bool IsDown = 	((lParam & (1 << 31)) == 0);
+			bool32 WasDown = ((lParam & (1 << 30)) != 0); 
+			bool32 IsDown = 	((lParam & (1 << 31)) == 0);
 			
 			if(WasDown != IsDown)
 			{
@@ -444,7 +449,6 @@ Win32MainWindowCallback(HWND   Window,
 			HDC DeviceContext = BeginPaint(Window, &Paint);
 			
 			win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-			
 			Win32DisplayBufferInWindow(DeviceContext, &GlobalBackbuffer,
 									Dimension.Height, Dimension.Width);
 									
@@ -553,24 +557,26 @@ WinMain(
 						//see if controllerstate.dwpacketnumber increments too rapidly
 						XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
 						
-						bool Up = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
-						bool Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
-						bool Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
-						bool Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
-						bool Start = (Pad->wButtons & XINPUT_GAMEPAD_START);
-						bool Back = (Pad->wButtons & XINPUT_GAMEPAD_BACK);
-						bool LeftShoulder = (Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);         
-						bool RightShoulder = (Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
-						bool AButton = (Pad->wButtons & XINPUT_GAMEPAD_A);
-						bool BButton = (Pad->wButtons & XINPUT_GAMEPAD_B);
-						bool XButton = (Pad->wButtons & XINPUT_GAMEPAD_X);
-						bool YButton = (Pad->wButtons & XINPUT_GAMEPAD_Y);
+						bool32 Up = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+						bool32 Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+						bool32 Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+						bool32 Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+						bool32 Start = (Pad->wButtons & XINPUT_GAMEPAD_START);
+						bool32 Back = (Pad->wButtons & XINPUT_GAMEPAD_BACK);
+						bool32 LeftShoulder = (Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);         
+						bool32 RightShoulder = (Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+						bool32 AButton = (Pad->wButtons & XINPUT_GAMEPAD_A);
+						bool32 BButton = (Pad->wButtons & XINPUT_GAMEPAD_B);
+						bool32 XButton = (Pad->wButtons & XINPUT_GAMEPAD_X);
+						bool32 YButton = (Pad->wButtons & XINPUT_GAMEPAD_Y);
 					
 						int16 StickX = Pad->sThumbLX;
 						int16 StickY = Pad->sThumbLY;
 						
-						XOffset += StickX >> 12;
-						YOffset += StickY >> 12;
+						//#define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE 7849
+						//#define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
+						XOffset += StickX / 4096;
+						YOffset += StickY / 4096;
 						
 						SoundOutput.ToneHz = 512 + ((int)256.0f*((real32)StickY/30000.0f));
 						SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond/SoundOutput.ToneHz;
