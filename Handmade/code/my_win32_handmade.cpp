@@ -521,7 +521,7 @@ WinMain(
 			SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSecond*SoundOutput.BytesPerSample;
 			SoundOutput.LatencySampleCount = SoundOutput.SamplesPerSecond / 15;
 			Win32InitializeDSound(Window, SoundOutput.SamplesPerSecond, SoundOutput.SecondaryBufferSize);
-			Win32FillSoundBuffer(&SoundOutput, 0, SoundOutput.SecondaryBufferSize);
+			Win32FillSoundBuffer(&SoundOutput, 0, SoundOutput.LatencySampleCount*SoundOutput.BytesPerSample);
 			GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 		
 			GlobalRunning = true;
@@ -592,17 +592,22 @@ WinMain(
 				{
 					//the byte in the buffer where we'll actually be
 					DWORD ByteToLock = (SoundOutput.RunningSampleIndex*SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
+				
+					DWORD TargetCursor = ((PlayCursor + 
+						(SoundOutput.LatencySampleCount*SoundOutput.BytesPerSample)) %
+						SoundOutput.SecondaryBufferSize);
+			
 					DWORD BytesToWrite;
 					
 					//Change this to use a lower latency offset from the play cursor for when we add sound effects
-					if(ByteToLock > PlayCursor)
+					if(ByteToLock > TargetCursor)
 					{
 						BytesToWrite = SoundOutput.SecondaryBufferSize - ByteToLock;
-						BytesToWrite += PlayCursor;
+						BytesToWrite += TargetCursor;
 					}
 					else
 					{
-						BytesToWrite = PlayCursor - ByteToLock;
+						BytesToWrite = TargetCursor - ByteToLock;
 					}
 	
 					Win32FillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite);
