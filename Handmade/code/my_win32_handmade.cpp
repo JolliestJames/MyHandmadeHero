@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <xinput.h>
 #include <dsound.h>
+#include <stdio.h>
 
 //implement sine ourselves so we can get rid of math.h
 #include <math.h>
@@ -467,13 +468,18 @@ Win32MainWindowCallback(HWND   Window,
 	return(Result);
 }
 
-int CALLBACK 
+int CALLBACK
 WinMain(
   HINSTANCE Instance,
   HINSTANCE PrevInstance,
   LPSTR     CommandLine,
   int       ShowCode)
 {
+	LARGE_INTEGER PerfCountFrequencyResult;
+	QueryPerformanceFrequency(&PerfCountFrequencyResult);
+	//return and assign counts per second
+	int64 PerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+	
 	Win32_Load_X_Input();
 	WNDCLASS WindowClassObject = {};
 	Win32ResizeDIBSection(&GlobalBackbuffer, 1280, 720);
@@ -483,7 +489,6 @@ WinMain(
 	WindowClassObject.lpfnWndProc = Win32MainWindowCallback;
 	WindowClassObject.hInstance = Instance;
 	//WindowClass.hIcon;
-	
 	WindowClassObject.lpszClassName = "HandmadeHeroWindowClass";
 	
 	if(RegisterClassA(&WindowClassObject))
@@ -529,8 +534,15 @@ WinMain(
 			GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 		
 			GlobalRunning = true;
+			
+			LARGE_INTEGER LastCounter;
+			QueryPerformanceCounter(&LastCounter);
+			
+			uint64 LastCycleCount = __rdtsc();
+			
 			while(GlobalRunning)
 			{
+				
 				MSG Message;
 				
 				while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
@@ -578,7 +590,7 @@ WinMain(
 						XOffset += StickX / 4096;
 						YOffset += StickY / 4096;
 						
-						SoundOutput.ToneHz = 512 + ((int)256.0f*((real32)StickY/30000.0f));
+						SoundOutput.ToneHz = 512 + (int)(256.0f*((real32)StickY/30000.0f));
 						SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond/SoundOutput.ToneHz;
 						
 					}
@@ -623,6 +635,26 @@ WinMain(
 				win32_window_dimension Dimension = Win32GetWindowDimension(Window);
 				Win32DisplayBufferInWindow(DeviceContext, &GlobalBackbuffer,
 									Dimension.Width, Dimension.Height);
+				
+				uint64 EndCycleCount = __rdtsc();
+				
+				LARGE_INTEGER EndCounter;
+				QueryPerformanceCounter(&EndCounter);
+				
+				//display value here
+				uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
+				int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
+				real32 MSPerFrame = ((1000.0f*(real32)CounterElapsed) / (real32)PerfCountFrequency);
+				real32 FPS = (real32)PerfCountFrequency/(real32)CounterElapsed;
+				//million cycles per frame
+				real32 MCPF = ((real32)CyclesElapsed / 1000000.0f);
+	
+				char Buffer[256];
+				sprintf(Buffer,"%.02fms/f, / %.02ff/s, %.02fmc/f\n", MSPerFrame, FPS, MCPF);
+				OutputDebugStringA(Buffer);
+	
+				LastCounter = EndCounter;
+				LastCycleCount = EndCycleCount;
 			}
 		}
 		else
