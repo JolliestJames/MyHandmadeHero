@@ -27,20 +27,13 @@
 	Just a partial list of shit we need to do
 */
 
-#include <windows.h>
 #include <stdint.h>
-#include <xinput.h>
-#include <dsound.h>
-#include <stdio.h>
-
-//implement sine ourselves so we can get rid of math.h
-#include <math.h>
 
 #define internal static
 #define local_persist static
 #define global_variable static
 
-#define Pi 3.14159265359
+#define Pi 3.14159265359f
 
 typedef int8_t int8;
 typedef int16_t int16;
@@ -57,6 +50,13 @@ typedef float real32;
 typedef double real64;
 
 #include "Handmade.cpp"
+
+#include <windows.h>
+#include <xinput.h>
+#include <dsound.h>
+#include <stdio.h>
+
+#include <math.h>
 
 struct win32_offscreen_buffer
 {
@@ -102,7 +102,7 @@ typedef DIRECT_SOUND_CREATE(direct_sound_create);
 void *PlatformLoadFile(char *Filename)
 {
 	//implements Win32 file loading
-	return(0);
+	return 0;
 }
 
 internal void
@@ -602,7 +602,7 @@ WinMain(
 				Buffer.Pitch = GlobalBackbuffer.Pitch;
 				Buffer.Height = GlobalBackbuffer.Height;
 				Buffer.Width = GlobalBackbuffer.Width ;
-				GameUpdateAndRender(&Buffer);
+				GameUpdateAndRender(&Buffer, XOffset, YOffset);
 				
 				DWORD PlayCursor;
 				DWORD WriteCursor;
@@ -664,5 +664,5 @@ WinMain(
 	{
 		//logging
 	}
-	return(0);
+	return 0;
 }
