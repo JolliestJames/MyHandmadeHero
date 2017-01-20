@@ -6,6 +6,27 @@
 	$Notice: This is ambitious
 ------------------------------------------------------------------*/
 
+/*
+	This is not a final platform layer
+	
+	- Saved game locations
+	- Getting a handle to our executable
+	- Asset loading path
+	- threading (launch a thread)
+	- raw input (Support for multiple keyboards)
+	- Sleep/timeBeginPeriod
+	- ClipCursor() (for multimonitor support)
+	- Fullscreen support
+	- WM_SETCURSOR (control cursor visibility)
+	- QueryCancelAutoplay
+	- WM_ACTIVATEAPP (for when we are not the active app)
+	- Blit speed improvements (BitBlt)
+	- Hardware acceleration (OpenGL or Direct3D or BOTH)
+	- GetKeyboardLayout (for french keyboards, international WASD support)
+	
+	Just a partial list of shit we need to do
+*/
+
 #include <windows.h>
 #include <stdint.h>
 #include <xinput.h>
@@ -25,7 +46,6 @@ typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
-
 typedef int32 bool32;
 
 typedef uint8_t uint8;
@@ -36,6 +56,8 @@ typedef uint64_t uint64;
 typedef float real32;
 typedef double real64;
 
+#include "Handmade.cpp"
+
 struct win32_offscreen_buffer
 {
 	BITMAPINFO Info;
@@ -43,9 +65,7 @@ struct win32_offscreen_buffer
 	int Width;
 	int Height;
 	int Pitch;
-	int BytesPerPixel;
 };
-
 
 struct win32_window_dimension
 {
@@ -78,6 +98,12 @@ global_variable X_Input_Set_State *XInputSetState_ = XInputSetStateStub;
 
 #define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
+
+void *PlatformLoadFile(char *Filename)
+{
+	//implements Win32 file loading
+	return(0);
+}
 
 internal void
 Win32_Load_X_Input(void)
@@ -209,28 +235,6 @@ internal win32_window_dimension Win32GetWindowDimension(HWND Window)
 	return Result;
 }
 
-internal void
-RenderWeirdGradient(win32_offscreen_buffer *Buffer, int BlueOffset, int GreenOffset)
-{
-	uint8 *Row = (uint8 *)Buffer->Memory;
-	
-	for(int Y = 0; Y < Buffer->Height; ++Y)
-	{
-		uint32 *Pixel = (uint32 *)Row;
-		
-		for(int X = 0; X < Buffer->Width; ++X)
-		{
-			
-			uint8 Blue = (X + BlueOffset);
-			uint8 Green = (Y + GreenOffset);
-		
-			*Pixel++ = ((Green << 8) | Blue);
-			
-		}
-		Row += Buffer->Pitch;
-	}
-}
-
 internal void 
 Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
 {
@@ -241,7 +245,8 @@ Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
 	
 	Buffer->Width = Width;
 	Buffer->Height = Height;
-	Buffer->BytesPerPixel = 4;
+	
+	int BytesPerPixel = 4;
 	
 	Buffer->Info.bmiHeader.biSize = sizeof(Buffer->Info.bmiHeader);
 	Buffer->Info.bmiHeader.biWidth = Buffer->Width;
@@ -250,11 +255,11 @@ Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
 	Buffer->Info.bmiHeader.biBitCount = 32;
 	Buffer->Info.bmiHeader.biCompression = BI_RGB;
 
-	int BitmapMemorySize = (Buffer->Width*Buffer->Height)*Buffer->BytesPerPixel;
+	int BitmapMemorySize = (Buffer->Width*Buffer->Height)*BytesPerPixel;
 	
 	Buffer->Memory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 	
-	Buffer->Pitch = Width*Buffer->BytesPerPixel;
+	Buffer->Pitch = Width*BytesPerPixel;
 }
 
 internal void
@@ -477,15 +482,14 @@ WinMain(
 {
 	LARGE_INTEGER PerfCountFrequencyResult;
 	QueryPerformanceFrequency(&PerfCountFrequencyResult);
-	//return and assign counts per second
 	int64 PerfCountFrequency = PerfCountFrequencyResult.QuadPart;
 	
 	Win32_Load_X_Input();
+
 	WNDCLASS WindowClassObject = {};
+
 	Win32ResizeDIBSection(&GlobalBackbuffer, 1280, 720);
-	WindowClassObject.style = CS_HREDRAW|CS_VREDRAW; //repaint the whole window, not just the new section
-	
-	//POINTERS DO NOT UNIQUELY IDENTIY MEMORY, ONLY MEMORY IN ONE PROCESS
+	WindowClassObject.style = CS_HREDRAW|CS_VREDRAW;
 	WindowClassObject.lpfnWndProc = Win32MainWindowCallback;
 	WindowClassObject.hInstance = Instance;
 	//WindowClass.hIcon;
@@ -493,8 +497,6 @@ WinMain(
 	
 	if(RegisterClassA(&WindowClassObject))
 	{
-		//Pass window class so windows knows that our window is going to call Win32MainWindowCallback
-		//every time it gets an event
 		HWND Window = 
 			CreateWindowExA(
 				0,
@@ -514,7 +516,6 @@ WinMain(
 		{
 			HDC DeviceContext = GetDC(Window);
 			
-			//Graphics test
 			int XOffset = 0;
 			int YOffset = 0;
 			
@@ -537,12 +538,9 @@ WinMain(
 			
 			LARGE_INTEGER LastCounter;
 			QueryPerformanceCounter(&LastCounter);
-			
 			uint64 LastCycleCount = __rdtsc();
-			
 			while(GlobalRunning)
 			{
-				
 				MSG Message;
 				
 				while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
@@ -565,7 +563,6 @@ WinMain(
 					//for several millis. THIS IS REALLY BAD, WE ONLY WANT TO PULL THE CONNECTED CONTROLLERS
 					if(XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
 					{
-						//controller is plugged in
 						//see if controllerstate.dwpacketnumber increments too rapidly
 						XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
 						
@@ -599,16 +596,19 @@ WinMain(
 						//controller is not available
 					}
 				}
+
+				game_offscreen_buffer Buffer = {};
+				Buffer.Memory = GlobalBackbuffer.Memory;
+				Buffer.Pitch = GlobalBackbuffer.Pitch;
+				Buffer.Height = GlobalBackbuffer.Height;
+				Buffer.Width = GlobalBackbuffer.Width ;
+				GameUpdateAndRender(&Buffer);
 				
-				RenderWeirdGradient(&GlobalBackbuffer, XOffset, YOffset);
-			
 				DWORD PlayCursor;
 				DWORD WriteCursor;
 
-				//directsound output test
 				if(SUCCEEDED(GlobalSecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor)))
 				{
-					//the byte in the buffer where we'll actually be
 					DWORD ByteToLock = (SoundOutput.RunningSampleIndex*SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
 				
 					DWORD TargetCursor = ((PlayCursor + 
@@ -617,7 +617,6 @@ WinMain(
 			
 					DWORD BytesToWrite;
 					
-					//Change this to use a lower latency offset from the play cursor for when we add sound effects
 					if(ByteToLock > TargetCursor)
 					{
 						BytesToWrite = SoundOutput.SecondaryBufferSize - ByteToLock;
@@ -641,18 +640,17 @@ WinMain(
 				LARGE_INTEGER EndCounter;
 				QueryPerformanceCounter(&EndCounter);
 				
-				//display value here
 				uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
 				int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
 				real32 MSPerFrame = ((1000.0f*(real32)CounterElapsed) / (real32)PerfCountFrequency);
 				real32 FPS = (real32)PerfCountFrequency/(real32)CounterElapsed;
-				//million cycles per frame
 				real32 MCPF = ((real32)CyclesElapsed / 1000000.0f);
-	
+
+#if 0				
 				char Buffer[256];
 				sprintf(Buffer,"%.02fms/f, / %.02ff/s, %.02fmc/f\n", MSPerFrame, FPS, MCPF);
 				OutputDebugStringA(Buffer);
-	
+#endif
 				LastCounter = EndCounter;
 				LastCycleCount = EndCycleCount;
 			}
