@@ -58,20 +58,7 @@ typedef double real64;
 #include <dsound.h>
 #include <stdio.h>
 
-struct win32_offscreen_buffer
-{
-	BITMAPINFO Info;
-	void *Memory;
-	int Width;
-	int Height;
-	int Pitch;
-};
-
-struct win32_window_dimension
-{
-	int Width;
-	int Height;
-};
+#include "my_win32_handmade.h"
 
 global_variable bool32 GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
@@ -271,19 +258,6 @@ Win32DisplayBufferInWindow(HDC DeviceContext, win32_offscreen_buffer *Buffer,
 	0, 0, Buffer->Width, Buffer->Height, Buffer->Memory,
 	&Buffer->Info, DIB_RGB_COLORS, SRCCOPY);
 }
-
-struct win32_sound_output
-{
-	int SamplesPerSecond;
-	int ToneHz;
-	int ToneVolume;
-	uint32 RunningSampleIndex;
-	int WavePeriod;
-	int BytesPerSample;
-	int SecondaryBufferSize;
-	real32 tSine;
-	int LatencySampleCount;
-};
 
 internal void
 Win32ClearBuffer(win32_sound_output *SoundOutput)
@@ -529,17 +503,11 @@ WinMain(
 		{
 			HDC DeviceContext = GetDC(Window);
 			
-			int XOffset = 0;
-			int YOffset = 0;
-			
 			win32_sound_output SoundOutput = {};
 
 			//make this so long that there's no way the game could ever pause for this long so we can see where the play cursor is?
 			SoundOutput.SamplesPerSecond = 48000;
-			SoundOutput.ToneHz = 256;
-			SoundOutput.ToneVolume = 250;
 			SoundOutput.RunningSampleIndex = 0;
-			SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond/SoundOutput.ToneHz;
 			SoundOutput.BytesPerSample = sizeof(int16)*2;
 			SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSecond*SoundOutput.BytesPerSample;
 			SoundOutput.LatencySampleCount = SoundOutput.SamplesPerSecond / 15;
@@ -600,11 +568,6 @@ WinMain(
 						
 						//#define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE 7849
 						//#define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
-						XOffset += StickX / 4096;
-						YOffset += StickY / 4096;
-						
-						SoundOutput.ToneHz = 512 + (int)(256.0f*((real32)StickY/30000.0f));
-						SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond/SoundOutput.ToneHz;
 						
 					}
 					else
@@ -613,12 +576,12 @@ WinMain(
 					}
 				}
 
-				DWORD ByteToLock;	
-				DWORD TargetCursor;
-				DWORD BytesToWrite;
-				DWORD PlayCursor;
-				DWORD WriteCursor;
-
+				//we need to make sure this is guarded entirely
+				DWORD ByteToLock = 0;	
+				DWORD TargetCursor = 0;
+				DWORD BytesToWrite = 0;
+				DWORD PlayCursor = 0;
+				DWORD WriteCursor = 0;
 				bool32 SoundIsValid = false;
 				
 				//todo: tighten sound logic so we know where we should be writing to and
@@ -655,7 +618,7 @@ WinMain(
 				Buffer.Pitch = GlobalBackbuffer.Pitch;
 				Buffer.Height = GlobalBackbuffer.Height;
 				Buffer.Width = GlobalBackbuffer.Width ;
-				GameUpdateAndRender(&Buffer, &SoundBuffer, XOffset, YOffset, SoundOutput.ToneHz);
+				GameUpdateAndRender(&Buffer, &SoundBuffer);
 				
 				if(SoundIsValid)
 				{
