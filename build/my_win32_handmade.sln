@@ -16,6 +16,15 @@ Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "my_win32_handmade", "my_win
 		AttachLaunchAction = No
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{42F981F7-8D30-49D9-828A-7FE8E96B7218}"
+	ProjectSection(SolutionItems) = preProject
+		..\Handmade\code\Handmade.cpp = ..\Handmade\code\Handmade.cpp
+		..\Handmade\code\Handmade.h = ..\Handmade\code\Handmade.h
+		..\Handmade\code\linux_handmade.cpp = ..\Handmade\code\linux_handmade.cpp
+		..\Handmade\code\my_win32_handmade.cpp = ..\Handmade\code\my_win32_handmade.cpp
+		..\Handmade\code\my_win32_handmade.h = ..\Handmade\code\my_win32_handmade.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
