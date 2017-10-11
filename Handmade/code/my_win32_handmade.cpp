@@ -150,16 +150,6 @@ DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile)
 	
 }
 
-struct win32_game_code
-{
-	HMODULE GameCodeDLL;
-	FILETIME DLLLastWriteTime;
-	game_update_and_render *UpdateAndRender;
-	game_get_sound_samples *GetSoundSamples;
-	
-	bool32 IsValid;
-};
-
 inline FILETIME
 Win32GetLastWriteTime(char *Filename)
 {
@@ -170,7 +160,7 @@ Win32GetLastWriteTime(char *Filename)
 	
 	if(FindHandle != INVALID_HANDLE_VALUE)
 	{
-		FILETIME LastWriteTime = FindData.ftLastWriteTime;
+		LastWriteTime = FindData.ftLastWriteTime;
 		FindClose(FindHandle);
 	}
 	
@@ -965,7 +955,9 @@ WinMain
 				while(GlobalRunning)
 				{
 
-					if(LoadCounter++ > 120)
+					FILETIME NewDLLWriteTime = Win32GetLastWriteTime(SourceDLLName);
+					
+					if(CompareFileTime(&NewDLLWriteTime, &Game.DLLLastWriteTime) != 0)
 					{
 						Win32UnloadGameCode(&Game);
 						Game = Win32LoadGameCode(SourceDLLName);
