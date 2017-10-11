@@ -178,9 +178,10 @@ Win32LoadGameCode(char *SourceDLLName)
 	char *TempDLLName = "handmade_temp.dll";
 	
 	Result.DLLLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
-	CopyFile(SourceDLLName, TempDLLName, FALSE);
-	Result.GameCodeDLL = LoadLibraryA(TempDLLName);
 	
+	CopyFile(SourceDLLName, TempDLLName, FALSE);
+	
+	Result.GameCodeDLL = LoadLibraryA(TempDLLName);
 	if(Result.GameCodeDLL)
 	{
 		Result.UpdateAndRender = 
@@ -815,6 +816,19 @@ WinMain
 	int       ShowCode
 )
 {
+	//NOTE: Don't use MAX_PATH in code that's user-facing, it can be dangerous
+	//and lead to bad results
+	char Buffer[MAX_PATH];
+	DWORD SizeOfFileName = GetModuleFileNameA(0, Buffer, sizeof(Buffer));
+	char *OnePastLastSlash = Buffer;
+	for(char *Scan = Buffer; *Scan; ++Scan)
+	{
+		if(*Scan == '\\')
+		{
+			OnePastLastSlash = Scan + 1;
+		}
+	}
+	
 	LARGE_INTEGER PerfCountFrequencyResult;
 	QueryPerformanceFrequency(&PerfCountFrequencyResult);
 	GlobalPerfCountFrequency = PerfCountFrequencyResult.QuadPart;
