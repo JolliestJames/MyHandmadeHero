@@ -54,6 +54,26 @@ RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset, int GreenOffs
 	}
 }
 
+internal void
+RenderPlayer(game_offscreen_buffer *Buffer, int PlayerX, int PlayerY)
+{
+	uint32 Color = 0xFFFFFFFF;
+	int Top = PlayerY;
+	int Bottom = PlayerY+10;
+	
+	for(int X = PlayerX; X < PlayerX+10; ++X)
+	{
+		uint8 *Pixel = ((uint8 *)Buffer->Memory + 
+						X*Buffer->BytesPerPixel + 
+						Top*Buffer->Pitch);
+		for(int Y = Top; Y < Bottom; ++Y)
+		{
+			*(uint32 *)Pixel = Color;
+			Pixel += Buffer->Pitch;
+		}		
+	}
+}
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
 	Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) == 
@@ -77,6 +97,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		
 		GameState->ToneHz = 512;
 		GameState->tSine = 0.0f;
+		
+		GameState->PlayerX = 100;
+		GameState->PlayerY	 = 100;
 		
 		//we may do this in the platform layer instead
 		Memory->IsInitialized = true;
@@ -117,9 +140,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			GameState->GreenOffset += 1;
 		}
+		
+		GameState->PlayerX += (int)(4.0f*Controller->StickAverageX);
+		GameState->PlayerY += (int)(4.0f*Controller->StickAverageX);
 	}	
 	
 	RenderWeirdGradient(Buffer, GameState->BlueOffset, GameState->GreenOffset);
+	RenderPlayer(Buffer, GameState->PlayerX, GameState->PlayerY);
 }
 
 extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)

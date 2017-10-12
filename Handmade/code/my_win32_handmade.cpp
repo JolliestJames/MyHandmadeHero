@@ -1186,6 +1186,7 @@ WinMain
 						Buffer.Pitch = GlobalBackbuffer.Pitch;
 						Buffer.Height = GlobalBackbuffer.Height;
 						Buffer.Width = GlobalBackbuffer.Width;
+						Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
 						Game.UpdateAndRender(&GameMemory, NewInput, &Buffer);
 						
 						LARGE_INTEGER AudioWallClock = Win32GetClockValue();
