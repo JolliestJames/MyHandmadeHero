@@ -882,7 +882,7 @@ WinMain
 
 	WNDCLASSA WindowClassObject = {};
 
-	Win32ResizeDIBSection(&GlobalBackbuffer, 1280, 720);
+	Win32ResizeDIBSection(&GlobalBackbuffer, 1200, 720);
 	WindowClassObject.style = CS_HREDRAW|CS_VREDRAW;
 	WindowClassObject.lpfnWndProc = Win32MainWindowCallback;
 	WindowClassObject.hInstance = Instance;
@@ -891,7 +891,7 @@ WinMain
 	
 	//TODO: How do we reliably query this on Windows?
 	
-#define MonitorRefreshHz 60
+#define MonitorRefreshHz 120
 #define GameUpdateHz (MonitorRefreshHz / 2)
 
 	real32 TargetSecondsPerFrame = 1.0f / (real32)GameUpdateHz;
@@ -1247,11 +1247,14 @@ WinMain
 							DWORD ExpectedFrameBoundaryByte = PlayCursor + ExpectedSoundBytesPerFrame;
 							
 							DWORD SafeWriteCursor = WriteCursor;
+							
 							if(SafeWriteCursor < PlayCursor)
 							{
 								SafeWriteCursor += SoundOutput.SecondaryBufferSize;
 							}
+							
 							Assert(SafeWriteCursor >= PlayCursor);
+		
 							SafeWriteCursor += SoundOutput.SafetyBytes;
 							
 							bool32 AudioCardIsLowLatency = (SafeWriteCursor < ExpectedFrameBoundaryByte);
