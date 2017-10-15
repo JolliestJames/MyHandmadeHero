@@ -493,7 +493,7 @@ Win32ProcessXInputStickValue(SHORT Value, SHORT DeadZoneThreshold)
 }
 
 internal void
-Win32ProcessPendingMessages(game_controller_input *KeyboardController)
+Win32ProcessPendingMessages(win32_state *Win32State, game_controller_input *KeyboardController)
 {
 	MSG Message;
 	
@@ -574,6 +574,18 @@ Win32ProcessPendingMessages(game_controller_input *KeyboardController)
 						if(IsDown)
 						{
 							GlobalPause = !GlobalPause;
+						}
+					}
+					else if(VKCode == 'L')
+					{
+						if(Win32State->InputRecordingIndex == 0)
+						{
+							Win32State->InputRecordingIndex = 1;
+						}
+						else
+						{
+							Win32State->InputRecordingIndex = 0;
+							Win32State->InputPlayingIndex = 1;
 						}
 					}
 #endif
@@ -828,6 +840,19 @@ ConcatenateStrings
 	*Destination++ = 0;
 }
 
+internal void
+Win32RecordInput(win32_state *Win32State, game_input *NewInput)
+{
+	DWORD BytesWritten;
+	WriteFile(Win32State->RecordingHandle, NewInput, sizeof(*NewInput), &BytesWritten, 0);
+}
+
+Win32PlayBackInput(win32_state *Win32State, game_input *NewInput)
+{
+	DWORD BytesRead;
+	ReadFile(Win32State->PlaybackHandle, NewInput, sizeof(*NewInput), &BytesRead, 0);
+}
+
 int CALLBACK
 WinMain
 (
@@ -883,6 +908,7 @@ WinMain
 	WNDCLASSA WindowClassObject = {};
 
 	Win32ResizeDIBSection(&GlobalBackbuffer, 1200, 720);
+	
 	WindowClassObject.style = CS_HREDRAW|CS_VREDRAW;
 	WindowClassObject.lpfnWndProc = Win32MainWindowCallback;
 	WindowClassObject.hInstance = Instance;
@@ -890,7 +916,6 @@ WinMain
 	WindowClassObject.lpszClassName = "HandmadeHeroWindowClass";
 	
 	//TODO: How do we reliably query this on Windows?
-	
 #define MonitorRefreshHz 120
 #define GameUpdateHz (MonitorRefreshHz / 2)
 
@@ -931,7 +956,8 @@ WinMain
 			Win32InitializeDSound(Window, SoundOutput.SamplesPerSecond, SoundOutput.SecondaryBufferSize);
 			Win32ClearBuffer(&SoundOutput);
 			GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
-	
+
+			win32_state *Win32State = {}
 			GlobalRunning = true;
 #if 0
 			//NOTE: This tests the PlayCursor/WriteCursor update frequency
@@ -1187,6 +1213,17 @@ WinMain
 						Buffer.Height = GlobalBackbuffer.Height;
 						Buffer.Width = GlobalBackbuffer.Width;
 						Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
+						
+						if(Win32State->InputRecordingIndex)
+						{
+							Win32RecordInput(&Win32State, &NewInput);
+						}
+						
+						if(Win32State->InputPlayingIndex)
+						{
+							Win32PlayBackInput(&Win32State, &NewInput);
+						}
+						
 						Game.UpdateAndRender(&GameMemory, NewInput, &Buffer);
 						
 						LARGE_INTEGER AudioWallClock = Win32GetClockValue();
