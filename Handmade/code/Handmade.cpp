@@ -13,7 +13,6 @@ GameOutputSound(game_sound_output_buffer *SoundBuffer, int ToneHz, game_state *G
 {
 
 	int16 ToneVolume = 3000;
-	//int ToneHz = 256;
 	int WavePeriod = SoundBuffer->SamplesPerSecond/ToneHz;
 	
 	int16 *SampleOut = SoundBuffer->Samples;
@@ -49,10 +48,13 @@ RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset, int GreenOffs
 		
 		for(int X = 0; X < Buffer->Width; ++X)
 		{
+			//uint32 NaivePeach = 0x00F4D5BF;
+			//uint8 SolidBlue = (uint8)Buffer->Height;
 			uint8 Blue = (uint8)(X + BlueOffset);
 			uint8 Green = (uint8)(Y + GreenOffset);
-		
-			*Pixel++ = ((Green << 8) | Blue);
+			
+			//*Pixel++ = NaivePeach;
+			*Pixel++ = ((Green << 16) | Blue);
 		}
 		
 		Row += Buffer->Pitch;
@@ -62,12 +64,7 @@ RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset, int GreenOffs
 internal void
 RenderPlayer(game_offscreen_buffer *Buffer, int PlayerX, int PlayerY)
 {
-	uint8 *EndOfBuffer = 
-	(
-		(uint8 *)Buffer->Memory + 
-		Buffer->BytesPerPixel*Buffer->Width +
-		Buffer->Pitch*Buffer->Height
-	);
+	uint8 *EndOfBuffer =(uint8 *)Buffer->Memory + Buffer->Pitch*Buffer->Height;
 	
 	uint32 Color = 0xFFFFFFFF;
 	int Top = PlayerY;
@@ -84,7 +81,7 @@ RenderPlayer(game_offscreen_buffer *Buffer, int PlayerX, int PlayerY)
 		
 		for(int Y = Top; Y < Bottom; ++Y)
 		{
-			if((Pixel >= Buffer->Memory) && (Pixel < EndOfBuffer))
+			if((Pixel >= Buffer->Memory) && ((Pixel + 4)< EndOfBuffer))
 			{
 				*(uint32 *)Pixel = Color;
 				Pixel += Buffer->Pitch;
@@ -160,12 +157,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->PlayerY -= (int)(4.0f*Controller->StickAverageY);
 		if(GameState->tJump > 0)
 		{
-			GameState->PlayerY -= (int)(5.0f*sinf(GameState->tJump));
-			//GameState->PlayerY += (int)(10.0f*sinf(GameState->tJump));
+			GameState->PlayerY += (int)(5.0f*sinf(0.5f*Pi*GameState->tJump));
 		}
 		if(Controller->ActionDown.EndedDown)
 		{
-			GameState->tJump = 1.0;
+			GameState->tJump = 3.0;
 		}
 		GameState->tJump -= 0.033f;
 	}	
