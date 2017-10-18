@@ -141,20 +141,38 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			//NOTE: use digital movement tuning
 			if(Controller->MoveLeft.EndedDown)
 			{
-				GameState->BlueOffset -= 1;
+				//GameState->BlueOffset -= 1;
 			}				
 			
 			if(Controller->MoveRight.EndedDown)
 			{
-				GameState->BlueOffset += 1;
+				//GameState->BlueOffset += 1;
 			}
 		}
 
 		//Input.AButtonEndedDown;
 		//Input.AButtonHalfTransitionCount;
+
+		if(Controller->MoveUp.EndedDown)	
+		{
+			GameState->PlayerY -= (int)(4.0f*1);
+		}
+		else if(Controller->MoveDown.EndedDown)
+		{
+			GameState->PlayerY += (int)(4.0f*1);
+		}
+		else if(Controller->MoveRight.EndedDown)
+		{
+			GameState->PlayerX += (int)(4.0f*1);
+		}
+		else if(Controller->MoveLeft.EndedDown)
+		{
+			GameState->PlayerX -= (int)(4.0f*1);
+		}
 		
 		GameState->PlayerX += (int)(4.0f*Controller->StickAverageX);
 		GameState->PlayerY -= (int)(4.0f*Controller->StickAverageY);
+		
 		if(GameState->tJump > 0)
 		{
 			GameState->PlayerY += (int)(5.0f*sinf(0.5f*Pi*GameState->tJump));

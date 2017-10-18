@@ -823,6 +823,7 @@ Win32DrawSoundBufferMarker
 	Win32DebugDrawVerticalHash(Backbuffer, X, Top, Bottom, Color);
 }
 
+#if 0
 internal void
 Win32DebugSyncDisplay
 (
@@ -904,6 +905,7 @@ Win32DebugSyncDisplay
 		);
 	}	
 }
+#endif
 
 internal void 
 ConcatenateStrings
@@ -1491,7 +1493,7 @@ WinMain
 						LastCounter = EndCounter;
 						
 						win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-#if HANDMADE_INTERNAL	
+#if 0	
 						//NOTE: Current is wrong on on zero'th index
 						Win32DebugSyncDisplay
 						(
