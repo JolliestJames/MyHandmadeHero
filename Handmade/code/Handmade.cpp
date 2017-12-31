@@ -20,7 +20,7 @@ GameOutputSound(game_sound_output_buffer *SoundBuffer, int ToneHz, game_state *G
 	for(int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; ++SampleIndex)
 	{
 
-#if 0
+#if 1
 		real32 SineValue = sinf(GameState->tSine);
 		int16 SampleValue = (int16)(SineValue * ToneVolume);
 #else
@@ -49,16 +49,15 @@ RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset, int GreenOffs
 		for(int X = 0; X < Buffer->Width; ++X)
 		{
 			//uint32 NaivePeach = 0x00F4D5BF;
-			uint8 SolidBlack = 0x00;
+			//uint8 SolidBlack = 0x00;
 			//uint8 SolidBlue = (uint8)Buffer->Height;
-			//uint8 Blue = (uint8)(X + BlueOffset);
-			//uint8 Green = (uint8)(Y + GreenOffset);
+			uint8 Blue = (uint8)(X + BlueOffset);
+			uint8 Green = (uint8)(Y + GreenOffset);
 			
 			//*Pixel++ = NaivePeach;
-			*Pixel++ = SolidBlack;
+			//*Pixel++ = SolidBlack;
 			//*Pixel++ = SolidBlue;
-			//*Pixel++ = ((Green << 16) | Blue);
-			
+			*Pixel++ = ((Green << 16) | Blue);
 		}
 		
 		Row += Buffer->Pitch;
@@ -164,6 +163,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		//Input.AButtonEndedDown;
 		//Input.AButtonHalfTransitionCount;
 
+#if 0
 		if(Controller->MoveUp.EndedDown)	
 		{
 			GameState->PlayerY -= (int)(4.0f*1);
@@ -180,6 +180,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			GameState->PlayerX -= (int)(4.0f*1);
 		}
+#endif
 		
 		GameState->PlayerX += (int)(4.0f*Controller->StickAverageX);
 		GameState->PlayerY -= (int)(4.0f*Controller->StickAverageY);

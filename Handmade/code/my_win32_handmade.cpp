@@ -823,7 +823,7 @@ Win32DrawSoundBufferMarker
 	Win32DebugDrawVerticalHash(Backbuffer, X, Top, Bottom, Color);
 }
 
-#if 0
+#if 1
 internal void
 Win32DebugSyncDisplay
 (
@@ -1035,6 +1035,7 @@ WinMain
 
 			win32_state Win32State = {};
 			GlobalRunning = true;
+
 #if 0
 			//NOTE: This tests the PlayCursor/WriteCursor update frequency
 			//On Handmade Hero machine it was 480 samples
@@ -1054,8 +1055,9 @@ WinMain
 				);
 				
 				OutputDebugStringA(TextBuffer);
+				
 			}
-#endif
+#endif		
 			int16 *Samples = (int16 *)VirtualAlloc
 			(	
 				0,
@@ -1493,7 +1495,7 @@ WinMain
 						LastCounter = EndCounter;
 						
 						win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-#if 0	
+#if 1
 						//NOTE: Current is wrong on on zero'th index
 						Win32DebugSyncDisplay
 						(
@@ -1503,8 +1505,10 @@ WinMain
 						);
 #endif		
 						HDC DeviceContext = GetDC(Window);
+						
 						Win32DisplayBufferInWindow(DeviceContext, &GlobalBackbuffer,
 												Dimension.Width, Dimension.Height);
+												
 						ReleaseDC(Window, DeviceContext);
 						
 						FlipWallClock = Win32GetClockValue();
